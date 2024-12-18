@@ -1,31 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextApiRequest, NextApiResponse } from 'next'
+import { Connection, PublicKey } from '@solana/web3.js'
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
-export async function POST(req: Request) {
-  const { walletAddress } = await req.json();
-  const SOLANA_RPC = "https://api.mainnet-beta.solana.com";
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { address } = req.query
 
-  const payload = {
-    jsonrpc: "2.0",
-    id: 1,
-    method: "getTokenAccountsByOwner",
-    params: [
-      walletAddress,
-      { programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-      { encoding: "jsonParsed" },
-    ],
-  };
+  if (!address || typeof address !== 'string') {
+    return res.status(400).json({ error: 'Invalid wallet address' })
+  }
 
-  const response = await fetch(SOLANA_RPC, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await response.json();
+  try {
+    const connection = new Connection(process.env.NEXT_PUBLIC_RPC_ENDPOINT || 'https://api.mainnet.solana.com')
+    const publicKey = new PublicKey(address)
 
-  const tokens = data.result.value.map((account: any) => ({
-    mint: account.account.data.parsed.info.mint,
-    amount: account.account.data.parsed.info.tokenAmount.uiAmountString,
-  }));
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
+      programId: TOKEN_PROGRAM_ID,
+    })
 
-  return NextResponse.json(tokens);
+    const tokens = tokenAccounts.value.map((accountInfo) => {
+      const parsedInfo = accountInfo.account.data.parsed.info
+      return {
+        mint: parsedInfo.mint,
+        amount: parsedInfo.tokenAmount.uiAmount,
+        decimals: parsedInfo.tokenAmount.decimals,
+      }
+    })
+
+    res.status(200).json(tokens)
+  } catch (error) {
+    console.error('Error fetching token accounts:', error)
+    res.status(500).json({ error: 'Failed to fetch token accounts' })
+  }
 }

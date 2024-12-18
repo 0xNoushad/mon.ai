@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { getUserTokens } from '../lib/utils/getUserTokens'
+import getTokenPrices from '../lib/utils/getTokenPrices'
 
 export interface Message {
   id: string
@@ -9,10 +10,10 @@ export interface Message {
 }
 
 interface UseChatProps {
-  initialMessages: Message[]
+  initialMessages?: Message[]
 }
 
-export function useChat({ initialMessages }: UseChatProps) {
+export function useChat({ initialMessages = [] }: UseChatProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -21,6 +22,7 @@ export function useChat({ initialMessages }: UseChatProps) {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null)
   const { publicKey } = useWallet()
 
+  // Local storage sync for chat history
   useEffect(() => {
     if (publicKey) {
       const storedHistory = localStorage.getItem(`chatHistory_${publicKey.toBase58()}`)
@@ -36,21 +38,39 @@ export function useChat({ initialMessages }: UseChatProps) {
     }
   }, [chatHistory, publicKey])
 
-  const isWalletQuestion = (message: string): boolean => {
-    const walletKeywords = ['balance', 'tokens', 'SOL', 'my wallet', 'assets']
+  // Question type detection
+  const isWalletQuestion = useCallback((message: string): boolean => {
+    const walletKeywords = ['balance', 'tokens', 'SOL', 'my wallet', 'assets', 'wallet', 'lamports']
     return walletKeywords.some((keyword) =>
       message.toLowerCase().includes(keyword.toLowerCase())
     )
-  }
+  }, [])
 
-  const generateSolanaExplorerLink = (address: string): string => {
+  const isTokenPriceQuestion = useCallback((message: string): boolean => {
+    const tokenKeywords = ['price', 'value', 'worth', 'cost', 'token']
+    return tokenKeywords.some((keyword) =>
+      message.toLowerCase().includes(keyword.toLowerCase())
+    )
+  }, [])
+
+  const isRoastWalletRequest = useCallback((message: string): boolean => {
+    const roastKeywords = ['roast', 'roast my wallet', 'make fun of my wallet']
+    return roastKeywords.some((keyword) =>
+      message.toLowerCase().includes(keyword.toLowerCase())
+    )
+  }, [])
+
+  // Utility functions
+  const generateSolanaExplorerLink = useCallback((address: string): string => {
     return `https://explorer.solana.com/address/${address}`
-  }
+  }, [])
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Input handling
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setInput(event.target.value)
-  }
+  }, [])
 
+  // Submit message and handle different types of queries
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (input.trim()) {
@@ -86,6 +106,58 @@ export function useChat({ initialMessages }: UseChatProps) {
                       .map((token: any) => `${token.name}: ${token.balance}`)
                       .join('\n')}\n\nYou can view more details on Solana Explorer: ${explorerLink}`
                   : `Your wallet appears to have no tokens or assets. You can view your wallet on Solana Explorer: ${explorerLink}`,
+            }
+          }
+        } else if (isTokenPriceQuestion(input)) {
+          if (!publicKey) {
+            newAssistantMessage = {
+              id: String(messages.length + 2),
+              role: 'assistant',
+              content: "To get token prices, please connect your wallet first.",
+            }
+          } else {
+            const walletData = await getUserTokens(publicKey.toBase58())
+            const tokenPrices = await getTokenPrices(walletData)
+            newAssistantMessage = {
+              id: String(messages.length + 2),
+              role: 'assistant',
+              content: `Here are the current prices for your tokens:\n\n${tokenPrices
+                .map((token) => `${token.name}: $${token.priceInUSD.toFixed(2)} (Total value: $${token.totalValueInUSD.toFixed(2)})`)
+                .join('\n')}`,
+            }
+          }
+        } else if (isRoastWalletRequest(input)) {
+          if (!publicKey) {
+            newAssistantMessage = {
+              id: String(messages.length + 2),
+              role: 'assistant',
+              content: "I can't roast your wallet if it's not connected. Connect your wallet first, then I'll give it a good roasting!",
+            }
+          } else {
+            const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                message: 'Roast my wallet',
+                address: publicKey.toBase58(),
+              }),
+            })
+
+            if (!response.ok) {
+              throw new Error('Failed to get response from the model')
+            }
+
+            const responseData = await response.json()
+            const parsedResponse = JSON.parse(responseData.content)
+
+            newAssistantMessage = {
+              id: String(messages.length + 2),
+              role: 'assistant',
+              content: parsedResponse.operationType === 9
+                ? `${parsedResponse.message}\n\nWant to share this roast? [Share on X](https://twitter.com/intent/tweet?text=${encodeURIComponent(`My wallet just got roasted: "${parsedResponse.message}" 🔥💀 #SolanaWalletRoast`)})`
+                : "Sorry, I couldn't roast your wallet right now. Maybe it's too cool to roast?",
             }
           }
         } else {
@@ -126,6 +198,7 @@ export function useChat({ initialMessages }: UseChatProps) {
     }
   }
 
+  // Chat history management
   const startNewChat = () => {
     if (messages.length > 0) {
       updateChatHistory(messages)
@@ -167,6 +240,13 @@ export function useChat({ initialMessages }: UseChatProps) {
     }
   }
 
+  // Share roast on X (Twitter)
+  const shareOnX = (roast: string) => {
+    const tweetText = encodeURIComponent(`My wallet just got roasted: "${roast}" 🔥💀 #SolanaWalletRoast`)
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${tweetText}`
+    window.open(tweetUrl, '_blank')
+  }
+
   return {
     messages,
     input,
@@ -179,6 +259,6 @@ export function useChat({ initialMessages }: UseChatProps) {
     loadChatFromHistory,
     deleteChat,
     currentChatId,
+    shareOnX,
   }
 }
-

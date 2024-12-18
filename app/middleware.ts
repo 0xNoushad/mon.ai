@@ -8,20 +8,17 @@ export async function middleware(req: NextRequest) {
   console.log("Current path:", url.pathname);
 
   // Allow specific paths
-  const allowedPaths = ['/connect', '/chat', '/api'];
+  const allowedPaths = ['/', '/chat', '/api'];
   if (allowedPaths.some(path => url.pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
-  // If you want to redirect from root to connect when not connected
-  if (url.pathname === '/') {
-    url.pathname = '/connect';
-    return NextResponse.redirect(url);
-  }
-
-  return NextResponse.next();
+  // If the path is not allowed, redirect to the home page
+  url.pathname = '/';
+  return NextResponse.redirect(url);
 }
 
 export const config = {
-  matcher: ['/', '/connect', '/chat', '/api/:path*'],
+  matcher: ['/((?!_next/static|favicon.ico).*)'],
 };
+

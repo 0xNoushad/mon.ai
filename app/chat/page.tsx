@@ -1,20 +1,28 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useWallet } from '@solana/wallet-adapter-react'
 import { useRouter } from 'next/navigation'
-import TerminalChat from "./chat"
+import { useWallet } from '@solana/wallet-adapter-react'
+import ChatComponent from './chat'
 
-export default function ChatScreen() {
-  const { connected } = useWallet()
+export default function ChatPage() {
   const router = useRouter()
+  const { connected } = useWallet()
 
   useEffect(() => {
     if (!connected) {
-      router.push('/wallet')
+      router.push('/')
     }
   }, [connected, router])
 
-  return connected ? <TerminalChat /> : null
+  if (!connected) {
+    return null // or a loading spinner
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <ChatComponent />
+    </div>
+  )
 }
 

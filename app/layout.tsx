@@ -1,6 +1,6 @@
 import { IBM_Plex_Mono } from 'next/font/google'
 import "./globals.css"
-import { WalletContextProvider } from "../lib/contexts/wallet-context"
+import { WalletContextProvider } from "../components/solana/wallet-context"
 
 const mono = IBM_Plex_Mono({
   subsets: ['latin'],

@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
-import { getUserTokens } from 'lib/utils/getUserTokens'
-import getTokenPrices from 'lib/utils/getTokenPrices'
+import { getUserTokens , getTokenPrices } from 'lib/utils/tokenUtils'
+ 
 import { LAMPORTS_PER_SOL } from '@solana/web3.js'
 
 interface WalletInfoBoxProps {
@@ -97,7 +97,7 @@ export function WalletInfoBox({ isOpen, onClose }: WalletInfoBoxProps) {
                 )}
               </div>
             )}
-            <div className="mt-4">
+            <div className="mt-4 items-center">
               <WalletMultiButton className="!bg-[#00FF00] !text-black !border-2 !border-black hover:!bg-[#00DD00] !w-full" />
             </div>
           </div>
@@ -106,4 +106,3 @@ export function WalletInfoBox({ isOpen, onClose }: WalletInfoBoxProps) {
     </AnimatePresence>
   )
 }
-

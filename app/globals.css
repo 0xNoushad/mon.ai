@@ -1,4 +1,56 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
+
+@layer base {
+  /* Custom scrollbar styles */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #000 transparent;
+  }
+
+  /* Chrome, Edge, and Safari */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #000;
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #00FF00;
+  }
+}
+
+@layer components {
+  .chat-container {
+    @apply flex flex-col h-full;
+  }
+
+  .message-container {
+    @apply space-y-4 p-6 pb-40 mb-20 overflow-y-auto;
+  }
+
+  .message {
+    @apply relative max-w-[85%] animate-message-fade-in;
+  }
+
+  .message-content {
+    @apply relative p-4 border border-black overflow-hidden;
+  }
+
+  .assistant-message {
+    @apply bg-[#00FF00];
+  }
+
+  .user-message {
+    @apply bg-gray-100;
+  }
+}
+

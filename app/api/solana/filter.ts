@@ -1,5 +1,0 @@
-export {};
-
-{
-    console.log("hey");
-}

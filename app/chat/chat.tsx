@@ -5,12 +5,11 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PaperAirplaneIcon, Bars3Icon, WalletIcon } from '@heroicons/react/24/solid'
 import { Space_Mono } from 'next/font/google'
-import {useChat}  from 'hooks/chat'
+import { useChat } from 'hooks/chat'
 import { ChatHistorySidebar } from 'components/ui/ChatHistorySidebar'
 import SpiralLoader from 'components/ui/loader'
 import { WalletInfoBox } from 'components/ui/WalletInfoBox'
 import { ClientWalletMultiButton } from 'components/ui/ClientWalletMultiButton'
- 
 
 const spaceMono = Space_Mono({
   subsets: ['latin'],
@@ -49,7 +48,6 @@ export default function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [showWalletInfo, setShowWalletInfo] = useState(false)
-  //const [showRoastWallet, setShowRoastWallet] = useState(false)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -80,6 +78,11 @@ export default function ChatInterface() {
       return <span key={index}>{part}</span>;
     });
   };
+
+  const handleSubmitWrapper = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    await handleSubmit(event, publicKey ? publicKey.toBase58() : undefined)
+  }
 
   if (!connected) {
     return (
@@ -116,10 +119,10 @@ export default function ChatInterface() {
         currentChatId={null}
       />
 
-      <WalletInfoBox isOpen={showWalletInfo} onClose={() => setShowWalletInfo(false)} />
-
-      {/* Remove the RoastWallet component from the JSX */}
-      {/*<RoastWallet isOpen={showRoastWallet} onClose={() => setShowRoastWallet(false)} />*/}
+      <WalletInfoBox 
+        isOpen={showWalletInfo} 
+        onClose={() => setShowWalletInfo(false)}
+      />
 
       <div className="flex-1 transition-all duration-300 ease-in-out"
            style={{ marginLeft: showHistory ? '256px' : '0' }}>
@@ -187,6 +190,7 @@ export default function ChatInterface() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="fixed bottom-24 left-0 right-0 px-4"
+              style={{ display: messages.length === 0 ? 'block' : 'none' }}
             >
               <div className="max-w-3xl mx-auto">
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -211,7 +215,7 @@ export default function ChatInterface() {
               className="fixed bottom-6 left-0 right-0 px-4"
             >
               <div className="max-w-3xl mx-auto">
-                <form onSubmit={handleSubmit} className="relative">
+                <form onSubmit={handleSubmitWrapper} className="relative">
                   <input
                     value={input}
                     onChange={handleInputChange}
@@ -229,8 +233,7 @@ export default function ChatInterface() {
                     <PaperAirplaneIcon className="h-5 w-5 text-black" />
                   </motion.button>
                 </form>
-              </div>
-            </motion.div>
+              </div></motion.div>
 
             <AnimatePresence>
               {error && (

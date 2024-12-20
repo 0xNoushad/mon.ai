@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
-import { getUserTokens } from '../lib/utils/getUserTokens'
-import getTokenPrices from '../lib/utils/getTokenPrices'
+import { getUserTokens , getTokenPrices } from '../lib/utils/tokenUtils'
+ 
 
 export interface Message {
   id: string
@@ -71,7 +71,7 @@ export function useChat({ initialMessages = [] }: UseChatProps) {
   }, [])
 
   // Submit message and handle different types of queries
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>, p0: string | undefined) => {
     event.preventDefault()
     if (input.trim()) {
       const newUserMessage: Message = {

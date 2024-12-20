@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     apple: [
-      { url: '/app/192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/app/512.png', sizes: '512x512', type: 'image/png' },
+      { url: 'https://ibb.co/YP93FQX', sizes: '192x192', type: 'image/png' },
+      { url: 'https://ibb.co/r6qmYgm', sizes: '512x512', type: 'image/png' },
     ],
   },
   themeColor: '#00FF00',
@@ -39,7 +39,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#000000" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <link rel="apple-touch-icon" href="/app/192.png" />
+        <link rel="apple-touch-icon" href="https://ibb.co/YP93FQX" />
       </head>
       <body className={mono.className}>
         <WalletContextProvider>

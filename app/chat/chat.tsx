@@ -23,7 +23,7 @@ const suggestedActions = [
   "Roast my wallet",
   "@swap",
   "@Create-token",
-  "Give me airdrop"
+  
 ]
 
 const gridBackground = `

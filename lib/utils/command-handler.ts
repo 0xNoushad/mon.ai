@@ -1,5 +1,5 @@
 import { TokenWithPrice, getUserTokens, getTokenPrices, filterLowValueTokens } from 'lib/utils/tokenUtils'
-import { Connection, PublicKey } from '@solana/web3.js'
+ 
 
 interface CommandResponse {
   content: string

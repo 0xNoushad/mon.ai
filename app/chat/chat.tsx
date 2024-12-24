@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PaperAirplaneIcon, Bars3Icon, WalletIcon } from '@heroicons/react/24/solid'
@@ -10,6 +10,8 @@ import { ChatHistorySidebar } from 'components/ui/ChatHistorySidebar'
 import SpiralLoader from 'components/ui/loader'
 import { WalletInfoBox } from 'components/ui/WalletInfoBox'
 import { ClientWalletMultiButton } from 'components/ui/ClientWalletMultiButton'
+import {SwapComponent} from 'components/ui/swapComponent'
+import { TokenCreator } from 'components/ui/TokenCreator'
 
 const spaceMono = Space_Mono({
   subsets: ['latin'],
@@ -17,11 +19,11 @@ const spaceMono = Space_Mono({
 })
 
 const suggestedActions = [
-  "Tell me about dreams",
-  "Explore consciousness",
-  "Discuss reality perception",
-  "Analyze dream symbolism",
+  
   "Roast my wallet",
+  "@swap",
+  "@Create-token",
+  "Give me airdrop"
 ]
 
 const gridBackground = `
@@ -42,18 +44,21 @@ export default function ChatInterface() {
     chatHistory,
     loadChatFromHistory,
     deleteChat,
+    currentChatId,
   } = useChat({
     initialMessages: [],
   })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [showWalletInfo, setShowWalletInfo] = useState(false)
+  const [showSwapComponent, setShowSwapComponent] = useState(false)
+  const [showTokenCreator, setShowTokenCreator] = useState(false)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const renderMessageContent = (content: string) => {
+  const renderMessageContent = useCallback((content: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     const parts = content.split(urlRegex);
     return parts.map((part, index) => {
@@ -75,14 +80,51 @@ export default function ChatInterface() {
           </a>
         );
       }
+      if (part.toLowerCase().includes('@swap') && !showSwapComponent) {
+        setShowSwapComponent(true);
+        return (
+          <span key={index}>
+            {part}
+          </span>
+        );
+      }
+      if ((part.toLowerCase().includes('create-token') || part.toLowerCase().includes('@create-token')) && !showTokenCreator) {
+        setShowTokenCreator(true);
+        return (
+          <span key={index}>
+            {part}
+          </span>
+        );
+      }
+      if (part.toLowerCase().includes('give me airdrop')) {
+        handleAirdropRequest();
+        return <span key={index}>{part}</span>;
+      }
       return <span key={index}>{part}</span>;
     });
-  };
+  }, [showSwapComponent, showTokenCreator]);
 
-  const handleSubmitWrapper = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    await handleSubmit(event, publicKey ? publicKey.toBase58() : undefined)
-  }
+  const handleSubmitWrapper = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await handleSubmit(event, publicKey ? publicKey.toBase58() : '', '');
+  }, [handleSubmit, publicKey]);
+
+  const handleStartNewChat = useCallback(() => {
+    startNewChat();
+    setShowSwapComponent(false);
+    setShowTokenCreator(false);
+  }, [startNewChat]);
+
+  const handleLoadChatFromHistory = useCallback((chatId: string) => {
+    loadChatFromHistory(chatId);
+    // Here we should check if the loaded chat contains @swap or create-token commands
+    // and set the corresponding state accordingly
+    const chat = chatHistory.find(chat => chat.id === chatId);
+    if (chat) {
+      setShowSwapComponent(chat.messages.some(msg => msg.content.toLowerCase().includes('@swap')));
+      setShowTokenCreator(chat.messages.some(msg => msg.content.toLowerCase().includes('create-token') || msg.content.toLowerCase().includes('@create-token')));
+    }
+  }, [loadChatFromHistory, chatHistory]);
 
   if (!connected) {
     return (
@@ -112,11 +154,11 @@ export default function ChatInterface() {
          }}>
       <ChatHistorySidebar
         chatHistory={chatHistory}
-        startNewChat={startNewChat}
-        loadChatFromHistory={loadChatFromHistory}
+        startNewChat={handleStartNewChat}
+        loadChatFromHistory={handleLoadChatFromHistory}
         deleteChat={deleteChat}
         showHistory={showHistory}
-        currentChatId={null}
+        currentChatId={currentChatId}
       />
 
       <WalletInfoBox 
@@ -233,7 +275,8 @@ export default function ChatInterface() {
                     <PaperAirplaneIcon className="h-5 w-5 text-black" />
                   </motion.button>
                 </form>
-              </div></motion.div>
+              </div>
+            </motion.div>
 
             <AnimatePresence>
               {error && (
@@ -251,10 +294,44 @@ export default function ChatInterface() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <AnimatePresence>
+              {showSwapComponent && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="fixed bottom-24 left-0 right-0 px-4 z-20"
+                >
+                  <div className="max-w-3xl mx-auto">
+                    <SwapComponent onClose={() => setShowSwapComponent(false)} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {showTokenCreator && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="fixed bottom-24 left-0 right-0 px-4 z-20"
+                >
+                  <div className="max-w-3xl mx-auto">
+                    <TokenCreator onClose={() => setShowTokenCreator(false)} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
     </div>
   )
+}
+
+function handleAirdropRequest() {
+  throw new Error('Function not implemented.')
 }
 
